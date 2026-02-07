@@ -1,0 +1,183 @@
+#include <sys/socket.h>  => Provides core socket functions: socket() , connect() , send() , recv()
+#include <netinet/in.h>  => Defines: struct sockaddr_in , AF_INET , htons()
+#include <arpa/inet.h>  => inet_pton() (IP string → binary)
+----------------------------------------------------------------------------------------------
+>> int socketFD = socket(AF_INET, SOCK_STREAM, 0);
+
+This creates:
+	* IPv4 socket (AF_INET)
+	* TCP socket (SOCK_STREAM)
+	* Protocol auto-selected (0 → TCP)
+	* Returned value:
+		>= 0 → success (file descriptor)
+		-1 → failure (you did NOT check this)
+
+>> char *ip = "142.250.188.46";   // can be anything
+
+>> struct sockaddr_in address;
+
+This struct tells the OS:
+	which IP
+	which port
+	which protocol family
+	
+>> address.sin_family = AF_INET;  //Means: IPv4 address.
+
+>> address.sin_port = htons(80);  //Port 80 (HTTP) converted to network byte order.
+
+>> inet_pton(AF_INET, ip, &address.sin_addr.s_addr); //"142.250.188.46" --> 32-bit binary IPv4
+
+>> int result = connect(socketFD,(struct sockaddr *)&address,sizeof(address)); 
+//Initiates TCP 3-way handshake
+
+
+>> char *message;
+>> message = "GET / HTTP/1.1\r\nHost: google.com\r\n\r\n";  //This is a raw HTTP request.
+
+
+>> send(socketFD, message, strlen(message), 0);  // Sends the HTTP request over TCP.
+
+>> char buffer[1024];
+>> recv(socketFD, buffer, 1024, 0);
+
+	Reads up to 1024 bytes from server.
+	Return:
+		> 0 → bytes received
+		0 → server closed connection
+		-1 → error
+		
+>> printf("Response was %s\n", buffer);
+
+
+------------------------------ First Application -----------------------------------
+
+server.c
+---------
+
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+int main() {
+    int server_fd, client_fd;
+    struct sockaddr_in server_addr;
+    char buffer[1024];
+
+    // Create socket
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd < 0) {
+        perror("socket failed");
+        return 1;
+    }
+
+    // Define server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(5000);
+    server_addr.sin_addr.s_addr = INADDR_ANY; // listen on all interfaces
+
+    // Bind socket to IP + port
+    if (bind(server_fd,(struct sockaddr*)&server_addr,sizeof(server_addr)) < 0) {
+        perror("bind failed");
+        return 1;
+    }
+
+    // 4. Start listening
+    listen(server_fd, 5);
+    printf("Server listening on port 5000...\n");
+
+    // 5. Accept client
+    client_fd = accept(server_fd, NULL, NULL);
+    if (client_fd < 0) {
+        perror("accept failed");
+        return 1;
+    }
+
+    // 6. Receive message
+    int bytes = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+    if (bytes > 0) {
+        buffer[bytes] = '\0';  // null terminate
+        printf("Client says: %s\n", buffer);
+    }
+
+    // 7. Close sockets
+    close(client_fd);
+    close(server_fd);
+
+    return 0;
+}
+
+
+client.c
+----------
+
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+
+int main() {
+    int sockfd;
+    struct sockaddr_in server_addr;
+    char *message = "Hello Server!";
+
+    // 1. Create socket
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        perror("socket failed");
+        return 1;
+    }
+
+    // 2. Server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(5000);
+    inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
+
+    // 3. Connect to server
+    if (connect(sockfd,
+                (struct sockaddr*)&server_addr,
+                sizeof(server_addr)) < 0) {
+        perror("connect failed");
+        return 1;
+    }
+
+    // 4. Send message
+    send(sockfd, message, strlen(message), 0);
+
+    // 5. Close socket
+    close(sockfd);
+
+    return 0;
+}
+
+
+/// NOTE:
+
+>>  cd = accept(sd, (struct sockaddr *)&cad, &cadl);
+Step-by-step :: 
+
+sd is a listening socket
+
+	Created by socket()
+
+	Activated by bind() + listen()
+
+	Cannot send/receive data
+
+accept():
+
+	Blocks until a client completes TCP handshake
+
+	Kernel creates a new socket internally
+
+	That new socket is returned as cd
+
+After return:
+
+	sd → still listening (can accept more clients)
+
+	cd → connected to one specific client
+
+
