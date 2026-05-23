@@ -1,4 +1,3 @@
-#!/bin/bash
 MESSAGE="${1:-Code pushed via CLI}"
 
 git add .
