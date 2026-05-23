@@ -17,7 +17,7 @@ int main() {
     connect(sd, (struct sockaddr *)&sad, sizeof(sad));
 
     printf("Enter message: ");
-    fgets(buffer, sizeof(buffer), stdin);
+    scanf("%[^\n]", buffer);
 
     send(sd, buffer, strlen(buffer), 0);
 
