@@ -2,6 +2,8 @@
 #include<string.h>
 #include<arpa/inet.h>
 #include<unistd.h>
+
+
 struct packet{
 	char data[100];
 	int sl;
@@ -69,6 +71,7 @@ void append(char data[],int sum[],int sl){
 }
 
 int main(void){
+	//socket setup
 	int sd;
 	struct sockaddr_in sad;
 	sd=socket(AF_INET,SOCK_STREAM,0);
@@ -77,21 +80,34 @@ int main(void){
 	sad.sin_addr.s_addr=inet_addr("127.0.0.1");
 	connect(sd, (struct sockaddr *)&sad, sizeof(sad));
 	struct packet p;
+	
+	//input
 	printf("Enter your data: ");
 	scanf("%s",p.data);
 	printf("Enter your segment length: ");
 	scanf("%d",&p.sl);
+	
+	//if seg length not in power of 2, discard it
 	if(check_segmentlength(p.sl)==0){
 		printf("Segment length must be in power of 2");
 		close(sd);
 		return -1;
 	}
 	
+	//add zero at beg
 	padding(p.data,p.sl);
 	int sum[100]={0};
+	
+	//perform addition and store checksum in sum
 	checksum(p.data,sum,p.sl);
+	
+	//one's comp of checksum
 	onecomplement(sum,p.sl);
+	
+	//add the checksum at the end of data bit
 	append(p.data,sum,p.sl);
+	
+	//print and send
 	printf("Code Word: %s",p.data);
 	
 	send(sd,&p,sizeof(p),0);

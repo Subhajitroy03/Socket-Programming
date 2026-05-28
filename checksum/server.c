@@ -2,12 +2,14 @@
 #include<string.h>
 #include<arpa/inet.h>
 #include<unistd.h>
+
+// make the packet
 struct packet{
 	char data[100];
 	int sl;
 };
 
-
+// add the segments
 void checksum(char data[],int sum[],int sl){
 	int dl=strlen(data);
 	
@@ -30,6 +32,8 @@ void checksum(char data[],int sum[],int sl){
 	}
 	
 }
+
+//do ones complement
 void onecomplement(int sum[],int sl){
 	for(int i=0;i<sl;i++){
 		if(sum[i]==1) sum[i]=0;
@@ -37,6 +41,7 @@ void onecomplement(int sum[],int sl){
 	}
 }
 
+//optional just to check the code
 void manipulate_data(char data[],int pos){
 	if(data[pos]=='0') data[pos]='1';
 	else if(data[pos]=='1') data[pos]='0';
@@ -44,6 +49,8 @@ void manipulate_data(char data[],int pos){
 
 
 int main(void){
+
+	//socket setup
 	int sd,cd,cadl;
 	struct sockaddr_in sad,cad;
 	sd=socket(AF_INET,SOCK_STREAM,0);
@@ -67,6 +74,8 @@ int main(void){
 		manipulate_data(p.data,pos);
 	}
 	printf("Data received: %s \n",p.data);
+	
+	
 	int sum[100]={0};
 	checksum(p.data,sum,p.sl);
 	onecomplement(sum,p.sl);
