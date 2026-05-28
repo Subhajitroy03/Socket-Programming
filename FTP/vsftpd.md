@@ -1,4 +1,4 @@
-# VSFTPD (Very Secure FTP Daemon) Beginner Study Guide
+# VSFTPD (Very Secure FTP Daemon)
 
 A comprehensive, lab-tested reference manual for installing, configuring, managing, and validating an operational FTP Server using `vsftpd` over a local loopback interface.
 
@@ -52,12 +52,14 @@ Run these two commands immediately upon logging in to prevent data payload corru
 ### A) RECEIVING FILES (Downloading: Server &rarr; Local Computer)
 
 * **`pwd`** *Description:* Prints the current working directory path you are standing in on the **remote server**. Preventative tool against blind transfers.  
-  *Real-World Example:* ```text
+  *Real-World Example:*
+  ```text
   ftp> pwd
   257 "/home/subha" is the current directory.
   ```
 * **`get <filename>`** *Description:* Requests exactly **one** specific file from the server's active path and downloads it to your local system path.  
-  *Real-World Example:* ```text
+  *Real-World Example:*
+  ```text
   ftp> get socket_prog.pdf
   local: socket_prog.pdf remote: socket_prog.pdf
   200 PORT command successful. Consider using PASV.
@@ -66,14 +68,16 @@ Run these two commands immediately upon logging in to prevent data payload corru
   124530 bytes received in 0.05 secs (2.49 MB/s)
   ```
 * **`mget <pattern>`** *Description:* Downloads **multiple** files concurrently using a wildcard pattern (`*`).  
-  *Real-World Example:* ```text
+  *Real-World Example:*
+  ```text
   ftp> mget *.pdf
   200 PORT command successful. Consider using PASV.
   150 Opening BINARY mode data connection for day1_notes.pdf.
   226 Transfer complete.
   ```
 * **`lcd <path/to/local/dir>`** *Description:* "Local Change Directory". This modifies your positioning on your **local computer** where files land. It leaves your remote directory pointer untouched.  
-  *Real-World Example:* ```text
+  *Real-World Example:*
+  ```text
   ftp> lcd /mnt/c/Users/roysu/Downloads/Socket-Programming
   Local directory now /mnt/c/Users/roysu/Downloads/Socket-Programming
   ```
@@ -81,12 +85,14 @@ Run these two commands immediately upon logging in to prevent data payload corru
 ### B) SENDING FILES (Uploading: Local Computer &rarr; Server)
 
 * **`!ls`** *Description:* The exclamation mark (`!`) serves as an escape character. It temporarily breaks out of the FTP environment to run an immediate directory listing directly on your **local machine** shell so you can verify source file locations.  
-  *Real-World Example:* ```text
+  *Real-World Example:*
+  ```text
   ftp> !ls
   README.md   checksum   day1   parity   push.sh   test_code.c
   ```
 * **`put <filename>`** *Description:* Pinpoints exactly **one** target file on your local disk path and transmits a copy straight up into the server's working space.  
-  *Real-World Example:* ```text
+  *Real-World Example:*
+  ```text
   ftp> put test_code.c
   local: test_code.c remote: test_code.c
   200 PORT command successful. Consider using PASV.
@@ -95,7 +101,8 @@ Run these two commands immediately upon logging in to prevent data payload corru
   412 bytes sent in 0.00 secs (121.2 KB/s)
   ```
 * **`mput <pattern>`** *Description:* Uploads an entire batch of files matching a specific syntax character string to the server simultaneously.  
-  *Real-World Example:* ```text
+  *Real-World Example:*
+  ```text
   ftp> mput *.c
   200 PORT command successful. Consider using PASV.
   150 Ok to send data.
@@ -105,7 +112,8 @@ Run these two commands immediately upon logging in to prevent data payload corru
 ### Closing the Session
 * **`bye`** (or `quit` / `exit`)  
   *Description:* Terminates the TCP state transaction cleanly, logs your profile session out, and reverts the prompt cleanly back to your Linux shell.  
-  *Real-World Example:* ```text
+  *Real-World Example:*
+  ```text
   ftp> bye
   221 Goodbye.
   subha@Subhajit:/mnt/c/Users/roysu/Downloads/Socket-Programming$
@@ -152,14 +160,3 @@ ssl_enable=NO
 ```
 
 ---
-
-## 6. Critical Engineering Insights
-
-### Where Lab Assumptions Can Go Wrong
-1. **The Active vs. Passive Mode Fallacy:** The server explicitly returns the line `200 PORT command successful. Consider using PASV.` In a loopback test adapter link (`127.0.0.1`), **Active Mode (`PORT`)** runs flawlessly. However, assuming this translates seamlessly to a network exposure layer is incorrect. Real production architectures require setting up **Passive Mode (`PASV`)** port arrays so that data payload sockets don't get rejected by incoming NAT router firewalls.
-2. **The Local Path Blindspot:** The `put` command will fail instantly if you initiate the `ftp` tool from a folder that doesn't physically contain your source code files. The client maps its local read buffer to your exact directory location right before you ran the initial connection string.
-
-### Categorization of Information
-* **Facts:** FTP status numbers such as `257`, `150`, and `226` are structural execution confirmations mapped out explicitly under strict internet RFC engineering protocols.
-* **Guesses/Assumptions:** This study guide assumes your training environment profile runs inside an isolated, unexposed sandbox environment where relaxing security toggles like `chroot` creates zero data liability issues.
-* **Opinions:** When debugging stateful protocols like FTP, completely dropping complex user isolation barriers like `chroot_local_user` is the single most practical choice for academic labs. It completely isolates your learning scope to transport layer socket mechanics without losing hours to file system isolation blocks.
